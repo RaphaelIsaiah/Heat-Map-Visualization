@@ -1,7 +1,7 @@
 const url =
   "https://raw.githubusercontent.com/FreeCodeCamp/ProjectReferenceData/master/global-temperature.json";
 
-// Colorbrewer scheme fo the heat map
+// Colorbrewer scheme for the heat map
 const colorbrewer = {
   RdYlBu: {
     11: [
@@ -28,16 +28,16 @@ d3.json(url).then((data) => {
   });
 
   // Set up dimensions and padding
-  const width = 1200;
-  const height = 600;
+  const width = 1200; // Base width
+  const height = 600; // Base height
   const padding = { top: 80, right: 40, bottom: 80, left: 80 }; // Padding around the chart
 
   // Create main SVG container
   const svg = d3
     .select("#container")
     .append("svg")
-    .attr("width", width)
-    .attr("height", height);
+    .attr("viewBox", `0 0 ${width} ${height}`) // Use viewBox for responsiveness
+    .attr("preserveAspectRatio", "xMidYMid meet"); // Maintain aspect ratio
 
   // Create tooltip
   const tooltip = d3
@@ -49,13 +49,13 @@ d3.json(url).then((data) => {
   // Create scales for x-axis (years) and y-axis (months)
   const xScale = d3
     .scaleBand()
-    .domain(data.monthlyVariance.map((d) => d.year)) //Domain: array of years
+    .domain(data.monthlyVariance.map((d) => d.year)) // Domain: array of years
     .range([padding.left, width - padding.right]) // Range: from left padding to right padding
     .padding(0); // No padding between bands
 
   const yScale = d3
     .scaleBand()
-    .domain([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]) // Domain: Months (0-11)
+    .domain([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]) // Domain: months (0-11)
     .range([padding.top, height - padding.bottom]) // Range: from top padding to bottom padding
     .padding(0); // No padding between bands
 
@@ -70,14 +70,14 @@ d3.json(url).then((data) => {
   // Create the x-axis (years)
   const xAxis = d3
     .axisBottom(xScale)
-    .tickValues(xScale.domain().filter((year) => year % 20 === 0)) // Show ticks for years divisible by 10
+    .tickValues(xScale.domain().filter((year) => year % 20 === 0)) // Show ticks for years divisible by 20
     .tickFormat(d3.format("d")); // Format as integers
 
   // Create the y-axis (months)
   const yAxis = d3.axisLeft(yScale).tickFormat((month) => {
     const date = new Date(0);
     date.setUTCMonth(month); // Convert month number to a date
-    return d3.timeFormat("%B")(date); // Format as month name (e.g. "January")
+    return d3.timeFormat("%B")(date); // Format as month name (e.g., "January")
   });
 
   // Add the x-axis to the SVG
@@ -87,6 +87,7 @@ d3.json(url).then((data) => {
     .attr("transform", `translate(0,${height - padding.bottom})`) // Position at the bottom
     .call(xAxis);
 
+  // Add the y-axis to the SVG
   svg
     .append("g")
     .attr("id", "y-axis")
@@ -182,7 +183,7 @@ d3.json(url).then((data) => {
   const legendAxis = d3
     .axisBottom(legendScale)
     .ticks(6) // Number of ticks
-    .tickFormat(d3.format(".1f")); // Format as floating point numbers
+    .tickFormat(d3.format(".1f")); // Format as floating-point numbers
 
   // Add colored rectangles to the legend
   legend
@@ -207,10 +208,10 @@ d3.json(url).then((data) => {
   // Add the legend axis
   legend
     .append("g")
-    .attr("transform", `translate(0,${legendHeight})`) // Position at the bottom
+    .attr("transform", `translate(0,${legendHeight})`) // Position below the rectangles
     .call(legendAxis);
 
-  // Add title to the chart
+  // Add a title to the chart
   svg
     .append("text")
     .attr("id", "title")
@@ -220,7 +221,7 @@ d3.json(url).then((data) => {
     .style("font-size", "20px")
     .text("Monthly Global Land-Surface Temperature");
 
-  // Add description to the chart
+  // Add a description to the chart
   svg
     .append("text")
     .attr("id", "description")
@@ -233,4 +234,13 @@ d3.json(url).then((data) => {
         data.monthlyVariance[data.monthlyVariance.length - 1].year
       } (Base Temperature: ${data.baseTemperature}°C)`
     );
+
+  // Redraw chart on window resize
+  window.addEventListener("resize", () => {
+    const containerWidth = d3
+      .select("#container")
+      .node()
+      .getBoundingClientRect().width;
+    svg.attr("width", containerWidth); // Adjust SVG width to container width
+  });
 });

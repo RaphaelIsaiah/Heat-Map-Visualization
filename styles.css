@@ -25,10 +25,18 @@ body {
   justify-content: center;
   align-items: center;
   height: 90vh;
-  width: 90vw;
   background-color: rgba(227, 226, 225, 0.567);
   border-radius: 0.5rem;
   box-shadow: 0px 0px 15px 10px #4e4f4c3c;
+  width: 100%;
+  max-width: 1200px;
+  margin: auto;
+}
+
+svg {
+  display: block;
+  width: 100%;
+  height: auto;
 }
 
 .cell {
@@ -62,4 +70,10 @@ body {
 #description {
   font-weight: 500;
   font-style: italic;
+}
+
+@media (max-width: 600px) {
+  body {
+    padding: 0.2rem;
+  }
 }
