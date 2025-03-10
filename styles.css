@@ -58,6 +58,7 @@ svg {
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.2s;
+  font-size: clamp(0.5rem, 1vw, 1rem);
 }
 
 #legend {
