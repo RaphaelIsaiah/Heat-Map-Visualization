@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap");
+
 * {
   margin: 0;
   padding: 0;
@@ -11,6 +13,9 @@ body {
   align-items: center;
   height: 100vh;
   background-color: #f4f4f4;
+  font-family: "Ubuntu", sans-serif;
+  font-weight: 400;
+  font-style: normal;
 }
 
 #container {
@@ -48,4 +53,13 @@ body {
 
 #legend {
   font-size: 12px;
+}
+
+#title {
+  font-weight: 700;
+}
+
+#description {
+  font-weight: 500;
+  font-style: italic;
 }

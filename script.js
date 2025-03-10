@@ -109,19 +109,40 @@ d3.json(url).then((data) => {
     .attr("height", yScale.bandwidth()) // Height of each cell
     .attr("fill", (d) => colorScale(d.temperature)) // Color based on temperature
     .on("mouseover", (event, d) => {
-      // Show tooltip on hover
-      const tooltipWidth = tooltip.node().offsetWidth; // Get tooltip width
-      const tooltipHeight = tooltip.node().offsetHeight; // Get tooltip height
+      const tooltipWidth = tooltip.node().offsetWidth;
+      const tooltipHeight = tooltip.node().offsetHeight;
 
-      let left = event.pageX + 10; // Default tooltip position (left)
-      let top = event.pageY - 40; // Default tooltip position (top)
+      // Get the heat map boundaries
+      const heatmapLeft = padding.left;
+      const heatmapRight = width - padding.right;
+      const heatmapTop = padding.top;
+      const heatmapBottom = height - padding.bottom;
 
-      // Prevent tooltip overflow
-      if (left + tooltipWidth > window.innerWidth) {
-        left = event.pageX - tooltipWidth - 10; // Adjust if tooltip overflows right
+      // Calculate the cursor position relative to the SVG
+      const [cursorX, cursorY] = d3.pointer(event);
+
+      // Adjust tooltip position to stay within the heat map boundaries
+      let left = cursorX + padding.left + 10; // Default tooltip position (left)
+      let top = cursorY + padding.top - 40; // Default tooltip position (top)
+
+      // Prevent tooltip from overflowing the right edge
+      if (left + tooltipWidth > heatmapRight) {
+        left = cursorX + padding.left - tooltipWidth - 20; // Move tooltip to the left of the cursor
       }
-      if (top < 0) {
-        top = event.pageY + 10; // Adjust if tooltip overflows top
+
+      // Prevent tooltip from overflowing the left edge
+      if (left < heatmapLeft) {
+        left = heatmapLeft + 10; // Move tooltip to the right edge of the heat map
+      }
+
+      // Prevent tooltip from overflowing the bottom edge
+      if (top + tooltipHeight > heatmapBottom) {
+        top = cursorY + padding.top - tooltipHeight - 10; // Move tooltip above the cursor
+      }
+
+      // Prevent tooltip from overflowing the top edge
+      if (top < heatmapTop) {
+        top = heatmapTop + 10; // Move tooltip to the bottom edge of the heat map
       }
 
       const date = new Date(d.year, d.month); // Create a date object
