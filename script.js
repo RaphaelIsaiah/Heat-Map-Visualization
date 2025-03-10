@@ -1,7 +1,7 @@
 const url =
   "https://raw.githubusercontent.com/FreeCodeCamp/ProjectReferenceData/master/global-temperature.json";
 
-// Colorbrewer scheme
+// Colorbrewer scheme fo the heat map
 const colorbrewer = {
   RdYlBu: {
     11: [
@@ -16,23 +16,23 @@ const colorbrewer = {
       "#74add1",
       "#4575b4",
       "#313695",
-    ].reverse(),
+    ].reverse(), // Reverse the array to match the temperature range
   },
 };
 
 // Fetch data and create visualization
 d3.json(url).then((data) => {
   data.monthlyVariance.forEach((d) => {
-    d.month -= 1; // Convert month to 0-based index
-    d.temperature = data.baseTemperature + d.variance;
+    d.month -= 1; // Convert month to 0-based index (January = 0, February = 1, etc.)
+    d.temperature = data.baseTemperature + d.variance; // Calculate actual temperature
   });
 
-  // Set up dimensions
+  // Set up dimensions and padding
   const width = 1200;
   const height = 600;
-  const padding = { top: 80, right: 40, bottom: 80, left: 80 };
+  const padding = { top: 80, right: 40, bottom: 80, left: 80 }; // Padding around the chart
 
-  // Create main SVG
+  // Create main SVG container
   const svg = d3
     .select("#container")
     .append("svg")
@@ -46,82 +46,85 @@ d3.json(url).then((data) => {
     .attr("id", "tooltip")
     .style("opacity", 0);
 
-  // Create scales
+  // Create scales for x-axis (years) and y-axis (months)
   const xScale = d3
     .scaleBand()
-    .domain(data.monthlyVariance.map((d) => d.year))
-    .range([padding.left, width - padding.right])
-    .padding(0);
+    .domain(data.monthlyVariance.map((d) => d.year)) //Domain: array of years
+    .range([padding.left, width - padding.right]) // Range: from left padding to right padding
+    .padding(0); // No padding between bands
 
   const yScale = d3
     .scaleBand()
-    .domain([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]) // Months (0-11)
-    .range([padding.top, height - padding.bottom])
-    .padding(0);
+    .domain([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]) // Domain: Months (0-11)
+    .range([padding.top, height - padding.bottom]) // Range: from top padding to bottom padding
+    .padding(0); // No padding between bands
 
-  // Color scale
-  const minTemp = d3.min(data.monthlyVariance, (d) => d.temperature);
-  const maxTemp = d3.max(data.monthlyVariance, (d) => d.temperature);
+  // Create a color scale for the heat map
+  const minTemp = d3.min(data.monthlyVariance, (d) => d.temperature); // Min temperature
+  const maxTemp = d3.max(data.monthlyVariance, (d) => d.temperature); // Max temperature
   const colorScale = d3
     .scaleThreshold()
-    .domain(d3.range(minTemp, maxTemp, (maxTemp - minTemp) / 11))
-    .range(colorbrewer.RdYlBu[11]);
+    .domain(d3.range(minTemp, maxTemp, (maxTemp - minTemp) / 11)) // Divide the range into 11 parts
+    .range(colorbrewer.RdYlBu[11]); // Use the colorbrewer scheme
 
-  // Create axes
+  // Create the x-axis (years)
   const xAxis = d3
     .axisBottom(xScale)
-    .tickValues(xScale.domain().filter((year) => year % 10 === 0)) // Show ticks for years divisible by 10
-    .tickFormat(d3.format("d"));
+    .tickValues(xScale.domain().filter((year) => year % 20 === 0)) // Show ticks for years divisible by 10
+    .tickFormat(d3.format("d")); // Format as integers
 
+  // Create the y-axis (months)
   const yAxis = d3.axisLeft(yScale).tickFormat((month) => {
     const date = new Date(0);
-    date.setUTCMonth(month);
-    return d3.timeFormat("%B")(date); // Format as month name
+    date.setUTCMonth(month); // Convert month number to a date
+    return d3.timeFormat("%B")(date); // Format as month name (e.g. "January")
   });
 
-  // Add axes
+  // Add the x-axis to the SVG
   svg
     .append("g")
     .attr("id", "x-axis")
-    .attr("transform", `translate(0,${height - padding.bottom})`)
+    .attr("transform", `translate(0,${height - padding.bottom})`) // Position at the bottom
     .call(xAxis);
 
   svg
     .append("g")
     .attr("id", "y-axis")
-    .attr("transform", `translate(${padding.left},0)`)
+    .attr("transform", `translate(${padding.left},0)`) // Position at the left
     .call(yAxis);
 
   // Create heatmap cells
   svg
     .selectAll(".cell")
-    .data(data.monthlyVariance)
+    .data(data.monthlyVariance) // Bind data to rectangles
     .enter()
     .append("rect")
     .attr("class", "cell")
-    .attr("data-month", (d) => d.month)
-    .attr("data-year", (d) => d.year)
-    .attr("data-temp", (d) => d.temperature)
-    .attr("x", (d) => xScale(d.year))
-    .attr("y", (d) => yScale(d.month))
-    .attr("width", xScale.bandwidth())
-    .attr("height", yScale.bandwidth())
-    .attr("fill", (d) => colorScale(d.temperature))
+    .attr("data-month", (d) => d.month) // Store month
+    .attr("data-year", (d) => d.year) // Store year
+    .attr("data-temp", (d) => d.temperature) // Store temperature
+    .attr("x", (d) => xScale(d.year)) // Position based on year
+    .attr("y", (d) => yScale(d.month)) // Position based on month
+    .attr("width", xScale.bandwidth()) // Width of each cell
+    .attr("height", yScale.bandwidth()) // Height of each cell
+    .attr("fill", (d) => colorScale(d.temperature)) // Color based on temperature
     .on("mouseover", (event, d) => {
-      const tooltipWidth = tooltip.node().offsetWidth;
-      const tooltipHeight = tooltip.node().offsetHeight;
+      // Show tooltip on hover
+      const tooltipWidth = tooltip.node().offsetWidth; // Get tooltip width
+      const tooltipHeight = tooltip.node().offsetHeight; // Get tooltip height
 
-      let left = event.pageX + 10;
-      let top = event.pageY - 40;
+      let left = event.pageX + 10; // Default tooltip position (left)
+      let top = event.pageY - 40; // Default tooltip position (top)
 
       // Prevent tooltip overflow
       if (left + tooltipWidth > window.innerWidth) {
-        left = event.pageX - tooltipWidth - 10;
+        left = event.pageX - tooltipWidth - 10; // Adjust if tooltip overflows right
       }
       if (top < 0) {
-        top = event.pageY + 10;
+        top = event.pageY + 10; // Adjust if tooltip overflows top
       }
-      const date = new Date(d.year, d.month);
+
+      const date = new Date(d.year, d.month); // Create a date object
       tooltip
         .html(
           `
@@ -131,11 +134,12 @@ d3.json(url).then((data) => {
             `
         )
         .attr("data-year", d.year)
-        .style("opacity", 1)
+        .style("opacity", 1) // Make tooltip visible
         .style("left", `${left}px`)
         .style("top", `${top}px`);
     })
     .on("mouseout", () => {
+      // Hide tooltip
       tooltip.style("opacity", 0);
     });
 
@@ -147,39 +151,45 @@ d3.json(url).then((data) => {
     .attr("id", "legend")
     .attr("transform", `translate(${padding.left},${height - 50})`);
 
+  // Create a linear scale for the legend
   const legendScale = d3
     .scaleLinear()
-    .domain([minTemp, maxTemp])
-    .range([0, legendWidth]);
+    .domain([minTemp, maxTemp]) // Domain: temperature range
+    .range([0, legendWidth]); // Range: width of the legend
 
+  // Create an axis for the legend
   const legendAxis = d3
     .axisBottom(legendScale)
-    .ticks(10)
-    .tickFormat(d3.format(".1f"));
+    .ticks(6) // Number of ticks
+    .tickFormat(d3.format(".1f")); // Format as floating point numbers
 
+  // Add colored rectangles to the legend
   legend
     .append("g")
     .selectAll("rect")
-    .data(colorScale.range())
+    .data(colorScale.range()) // Bind color scale range to rectangles
     .enter()
     .append("rect")
-    .attr("x", (d, i) => legendScale(colorScale.domain()[i]))
+    .attr("x", (d, i) => legendScale(colorScale.domain()[i])) // Position based on temperature
     .attr("y", 0)
-    .attr("width", (d, i) =>
-      i === colorScale.domain().length - 1
-        ? legendWidth - legendScale(colorScale.domain()[i])
-        : legendScale(colorScale.domain()[i + 1]) -
-          legendScale(colorScale.domain()[i])
+    .attr(
+      "width",
+      (d, i) =>
+        i === colorScale.domain().length - 1
+          ? legendWidth - legendScale(colorScale.domain()[i]) // Last rectangle
+          : legendScale(colorScale.domain()[i + 1]) -
+            legendScale(colorScale.domain()[i]) // Other rectangles
     )
     .attr("height", legendHeight)
     .attr("fill", (d) => d);
 
+  // Add the legend axis
   legend
     .append("g")
-    .attr("transform", `translate(0,${legendHeight})`)
+    .attr("transform", `translate(0,${legendHeight})`) // Position at the bottom
     .call(legendAxis);
 
-  // Add titles
+  // Add title to the chart
   svg
     .append("text")
     .attr("id", "title")
@@ -189,6 +199,7 @@ d3.json(url).then((data) => {
     .style("font-size", "20px")
     .text("Monthly Global Land-Surface Temperature");
 
+  // Add description to the chart
   svg
     .append("text")
     .attr("id", "description")
