@@ -28,15 +28,15 @@ d3.json(url).then((data) => {
   });
 
   // Set up dimensions and padding
-  const width = 1200; // Base width
-  const height = 600; // Base height
+  const baseWidth = 1200; // Base width for larger screens
+  const baseHeight = 600; // Base height for larger screens
   const padding = { top: 80, right: 40, bottom: 80, left: 80 }; // Padding around the chart
 
   // Create main SVG container
   const svg = d3
     .select("#container")
     .append("svg")
-    .attr("viewBox", `0 0 ${width} ${height}`) // Use viewBox for responsiveness
+    .attr("viewBox", `0 0 ${baseWidth} ${baseHeight}`) // Use viewBox for responsiveness
     .attr("preserveAspectRatio", "xMidYMid meet"); // Maintain aspect ratio
 
   // Create tooltip
@@ -50,13 +50,13 @@ d3.json(url).then((data) => {
   const xScale = d3
     .scaleBand()
     .domain(data.monthlyVariance.map((d) => d.year)) // Domain: array of years
-    .range([padding.left, width - padding.right]) // Range: from left padding to right padding
+    .range([padding.left, baseWidth - padding.right]) // Range: from left padding to right padding
     .padding(0); // No padding between bands
 
   const yScale = d3
     .scaleBand()
     .domain([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]) // Domain: months (0-11)
-    .range([padding.top, height - padding.bottom]) // Range: from top padding to bottom padding
+    .range([padding.top, baseHeight - padding.bottom]) // Range: from top padding to bottom padding
     .padding(0); // No padding between bands
 
   // Create a color scale for the heat map
@@ -84,7 +84,7 @@ d3.json(url).then((data) => {
   svg
     .append("g")
     .attr("id", "x-axis")
-    .attr("transform", `translate(0,${height - padding.bottom})`) // Position at the bottom
+    .attr("transform", `translate(0,${baseHeight - padding.bottom})`) // Position at the bottom
     .call(xAxis);
 
   // Add the y-axis to the SVG
@@ -113,37 +113,35 @@ d3.json(url).then((data) => {
       const tooltipWidth = tooltip.node().offsetWidth;
       const tooltipHeight = tooltip.node().offsetHeight;
 
-      // Get the heat map boundaries
-      const heatmapLeft = padding.left;
-      const heatmapRight = width - padding.right;
-      const heatmapTop = padding.top;
-      const heatmapBottom = height - padding.bottom;
+      // Get the SVG's bounding box (scaled to the screen size)
+      const svgRect = svg.node().getBoundingClientRect();
 
       // Calculate the cursor position relative to the SVG
-      const [cursorX, cursorY] = d3.pointer(event);
+      const cursorX = event.clientX - svgRect.left;
+      const cursorY = event.clientY - svgRect.top;
 
-      // Adjust tooltip position to stay within the heat map boundaries
-      let left = cursorX + padding.left + 10; // Default tooltip position (left)
-      let top = cursorY + padding.top - 40; // Default tooltip position (top)
+      // Adjust tooltip position to stay within the SVG boundaries
+      let left = cursorX + 10; // Default tooltip position (left)
+      let top = cursorY - 40; // Default tooltip position (top)
 
-      // Prevent tooltip from overflowing the right edge
-      if (left + tooltipWidth > heatmapRight) {
-        left = cursorX + padding.left - tooltipWidth - 20; // Move tooltip to the left of the cursor
+      // Prevent tooltip from overflowing the right edge of the SVG
+      if (left + tooltipWidth > svgRect.width) {
+        left = cursorX - tooltipWidth - 10; // Move tooltip to the left of the cursor
       }
 
-      // Prevent tooltip from overflowing the left edge
-      if (left < heatmapLeft) {
-        left = heatmapLeft + 10; // Move tooltip to the right edge of the heat map
+      // Prevent tooltip from overflowing the left edge of the SVG
+      if (left < 0) {
+        left = 10; // Move tooltip to the right edge of the SVG
       }
 
-      // Prevent tooltip from overflowing the bottom edge
-      if (top + tooltipHeight > heatmapBottom) {
-        top = cursorY + padding.top - tooltipHeight - 10; // Move tooltip above the cursor
+      // Prevent tooltip from overflowing the bottom edge of the SVG
+      if (top + tooltipHeight > svgRect.height) {
+        top = cursorY - tooltipHeight - 10; // Move tooltip above the cursor
       }
 
-      // Prevent tooltip from overflowing the top edge
-      if (top < heatmapTop) {
-        top = heatmapTop + 10; // Move tooltip to the bottom edge of the heat map
+      // Prevent tooltip from overflowing the top edge of the SVG
+      if (top < 0) {
+        top = 10; // Move tooltip to the bottom edge of the SVG
       }
 
       const date = new Date(d.year, d.month); // Create a date object
@@ -157,8 +155,8 @@ d3.json(url).then((data) => {
         )
         .attr("data-year", d.year)
         .style("opacity", 1) // Make tooltip visible
-        .style("left", `${left}px`)
-        .style("top", `${top}px`);
+        .style("left", `${left + svgRect.left}px`) // Adjust for SVG's position in the viewport
+        .style("top", `${top + svgRect.top}px`); // Adjust for SVG's position in the viewport
     })
     .on("mouseout", () => {
       // Hide tooltip
@@ -171,7 +169,7 @@ d3.json(url).then((data) => {
   const legend = svg
     .append("g")
     .attr("id", "legend")
-    .attr("transform", `translate(${padding.left},${height - 50})`);
+    .attr("transform", `translate(${padding.left},${baseHeight - 50})`);
 
   // Create a linear scale for the legend
   const legendScale = d3
@@ -215,7 +213,7 @@ d3.json(url).then((data) => {
   svg
     .append("text")
     .attr("id", "title")
-    .attr("x", width / 2)
+    .attr("x", baseWidth / 2)
     .attr("y", 40)
     .attr("text-anchor", "middle")
     .style("font-size", "20px")
@@ -225,7 +223,7 @@ d3.json(url).then((data) => {
   svg
     .append("text")
     .attr("id", "description")
-    .attr("x", width / 2)
+    .attr("x", baseWidth / 2)
     .attr("y", 70)
     .attr("text-anchor", "middle")
     .style("font-size", "16px")
@@ -235,12 +233,18 @@ d3.json(url).then((data) => {
       } (Base Temperature: ${data.baseTemperature}°C)`
     );
 
-  // Redraw chart on window resize
-  window.addEventListener("resize", () => {
+  // Adjust SVG size dynamically for smaller screens
+  const adjustSVGSize = () => {
     const containerWidth = d3
       .select("#container")
       .node()
       .getBoundingClientRect().width;
     svg.attr("width", containerWidth); // Adjust SVG width to container width
-  });
+  };
+
+  // Initial adjustment
+  adjustSVGSize();
+
+  // Redraw chart on window resize
+  window.addEventListener("resize", adjustSVGSize);
 });
